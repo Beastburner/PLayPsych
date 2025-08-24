@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Spotify Playlist Generator</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Circular', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #121212;
+      color: #ffffff;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    .app-container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 280px;
+      background: #000000;
+      padding: 24px;
+      border-right: 1px solid #282828;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      margin-bottom: 32px;
+    }
+
+    .logo h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1db954;
+      margin-left: 8px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 0;
+      color: #b3b3b3;
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.2s ease;
+      cursor: pointer;
+    }
+
+    .nav-item:hover {
+      color: #ffffff;
+    }
+
+    .nav-item.active {
+      color: #ffffff;
+    }
+
+    .nav-item svg {
+      margin-right: 16px;
+      width: 24px;
+      height: 24px;
+    }
+
+    .connect-section {
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid #282828;
+    }
+
+    .connect-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      background: #1db954;
+      border: none;
+      border-radius: 500px;
+      padding: 16px 24px;
+      color: #000000;
+      font-weight: 700;
+      font-size: 14px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      transform: scale(1);
+    }
+
+    .connect-btn:hover {
+      background: #1ed760;
+      transform: scale(1.04);
+    }
+
+    .main-content {
+      flex: 1;
+      background: linear-gradient(180deg, #1f1f1f 0%, #121212 100%);
+      min-height: 100vh;
+    }
+
+    .content-header {
+      padding: 24px 32px;
+      background: linear-gradient(180deg, rgba(31, 31, 31, 0.9) 0%, rgba(18, 18, 18, 0) 100%);
+      backdrop-filter: blur(20px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .page-title {
+      font-size: 32px;
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+
+    .page-subtitle {
+      color: #b3b3b3;
+      font-size: 14px;
+    }
+
+    .filter-section {
+      padding: 0 32px 24px;
+    }
+
+    .filter-card {
+      background: #181818;
+      border-radius: 8px;
+      padding: 24px;
+      border: 1px solid #282828;
+    }
+
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .filter-label {
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+
+    .filter-select, .filter-input {
+      background: #3e3e3e;
+      border: 1px solid #535353;
+      border-radius: 4px;
+      padding: 12px 16px;
+      color: #ffffff;
+      font-size: 14px;
+      font-family: inherit;
+      transition: all 0.2s ease;
+    }
+
+    .filter-select:focus, .filter-input:focus {
+      outline: none;
+      border-color: #1db954;
+      box-shadow: 0 0 0 2px rgba(29, 185, 84, 0.3);
+    }
+
+    .filter-select option {
+      background: #282828;
+      color: #ffffff;
+    }
+
+    .generate-btn {
+      background: #1db954;
+      border: none;
+      border-radius: 500px;
+      padding: 16px 48px;
+      color: #000000;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      transform: scale(1);
+    }
+
+    .generate-btn:hover {
+      background: #1ed760;
+      transform: scale(1.04);
+    }
+
+    .generate-btn:disabled {
+      background: #535353;
+      color: #b3b3b3;
+      cursor: not-allowed;
+      transform: scale(1);
+    }
+
+    .playlist-section {
+      padding: 0 32px 32px;
+    }
+
+    .playlist-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #282828;
+    }
+
+    .playlist-info {
+      display: flex;
+      align-items: center;
+    }
+
+    .playlist-cover {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, #1db954, #1ed760);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 16px;
+      font-size: 24px;
+    }
+
+    .playlist-details h2 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .playlist-meta {
+      color: #b3b3b3;
+      font-size: 14px;
+    }
+
+    .playlist-actions {
+      display: flex;
+      gap: 16px;
+    }
+
+    .save-btn {
+      background: transparent;
+      border: 1px solid #535353;
+      border-radius: 4px;
+      padding: 12px 24px;
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: none;
+    }
+
+    .save-btn:hover {
+      background: #535353;
+      border-color: #b3b3b3;
+    }
+
+    .tracklist {
+      background: #181818;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .tracklist-header {
+      display: grid;
+      grid-template-columns: 40px 1fr 1fr 1fr 80px;
+      gap: 16px;
+      padding: 12px 16px;
+      color: #b3b3b3;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 1px solid #282828;
+    }
+
+    .track-row {
+      display: grid;
+      grid-template-columns: 40px 1fr 1fr 1fr 80px;
+      gap: 16px;
+      padding: 12px 16px;
+      border-bottom: 1px solid #282828;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      opacity: 0;
+      transform: translateY(10px);
+      animation: trackFadeIn 0.3s ease forwards;
+    }
+
+    .track-row:hover {
+      background: #282828;
+    }
+
+    .track-row:last-child {
+      border-bottom: none;
+    }
+
+    .track-number {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #b3b3b3;
+      font-size: 14px;
+      font-weight: 400;
+    }
+
+    .track-info {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+    }
+
+    .track-name {
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 400;
+      margin-bottom: 2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .track-artist {
+      color: #b3b3b3;
+      font-size: 14px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .track-genre, .track-mood, .track-language {
+      display: flex;
+      align-items: center;
+      color: #b3b3b3;
+      font-size: 14px;
+    }
+
+    .track-duration {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #b3b3b3;
+      font-size: 14px;
+    }
+
+    .spotify-embed {
+      grid-column: 1 / -1;
+      padding: 16px;
+      display: none;
+    }
+
+    .track-row.expanded .spotify-embed {
+      display: block;
+      animation: embedSlideDown 0.3s ease;
+    }
+
+    .spotify-embed iframe {
+      width: 100%;
+      height: 152px;
+      border-radius: 8px;
+    }
+
+    .loading {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      color: #b3b3b3;
+    }
+
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #282828;
+      border-top-color: #1db954;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+
+    .save-message {
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      display: none;
+    }
+
+    .save-message.success {
+      background: rgba(29, 185, 84, 0.15);
+      border: 1px solid rgba(29, 185, 84, 0.3);
+      color: #1db954;
+    }
+
+    .save-message.error {
+      background: rgba(229, 62, 62, 0.15);
+      border: 1px solid rgba(229, 62, 62, 0.3);
+      color: #e53e3e;
+    }
+
+    .save-message a {
+      color: inherit;
+      text-decoration: underline;
+    }
+
+    @keyframes trackFadeIn {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes embedSlideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+      .app-container {
+        flex-direction: column;
+      }
+      
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        padding: 16px;
+      }
+      
+      .content-header {
+        padding: 16px 24px;
+      }
+      
+      .filter-section, .playlist-section {
+        padding: 0 24px 24px;
+      }
+      
+      .filter-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .tracklist-header {
+        grid-template-columns: 30px 1fr 60px;
+      }
+      
+      .track-row {
+        grid-template-columns: 30px 1fr 60px;
+      }
+      
+      .track-genre, .track-mood, .track-language {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+   <div class="app-container">
+    <div class="sidebar">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" width="32" height="32" fill="#1db954">
+          <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.32 11.28-1.08 15.721 1.621.539.3.719 1.02.42 1.56-.301.421-1.02.599-1.559.3z"/>
+        </svg>
+        <h1>Playlist Generator</h1>
+      </div>
+      
+      <nav>
+        <div class="nav-item active">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M9 2v20l-7-4V6l7-4z"/>
+            <path d="M22 4L9 10v10l13-6V4z"/>
+          </svg>
+          Generator
+        </div>
+      </nav>
+      
+      <!-- 🔥 Spotify Connection Section -->
+      <div class="connect-section">
+        {% if user_name %}
+          <div class="profile" style="text-align:center; margin-bottom:16px;">
+            {% if user_image %}
+              <img src="{{ user_image }}" alt="Profile Picture" style="width:80px;height:80px;border-radius:50%;margin-bottom:10px;">
+            {% else %}
+              <img src="https://via.placeholder.com/80" alt="Profile Picture" style="width:80px;height:80px;border-radius:50%;margin-bottom:10px;">
+            {% endif %}
+            <p style="color:white;font-weight:700;">👤 {{ user_name }}</p>
+          </div>
+          <a href="/logout" class="connect-btn" style="background:#e53e3e;color:white;">
+            Logout
+          </a>
+        {% else %}
+          <a href="/login" class="connect-btn">Connect to Spotify</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="content-header">
+        <h1 class="page-title">Create Playlist</h1>
+        <p class="page-subtitle">Generate a personalized playlist based on your preferences</p>
+      </div>
+
+      <div class="filter-section">
+        <div class="filter-card">
+          <form id="filterForm">
+            <div class="filter-grid">
+              <div class="filter-group">
+                <label class="filter-label">Mood</label>
+                <select name="mood" class="filter-select">
+                  <option value="Any">Any mood</option>
+                  {% for mood in moods %}
+                  <option value="{{mood}}">{{mood}}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              
+              <div class="filter-group">
+                <label class="filter-label">Genre</label>
+                <select name="genre" class="filter-select">
+                  <option value="Any">Any genre</option>
+                  {% for genre in genres %}
+                  <option value="{{genre}}">{{genre}}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              
+              <div class="filter-group">
+                <label class="filter-label">Language</label>
+                <select name="language" class="filter-select">
+                  <option value="Any">Any language</option>
+                  {% for language in languages %}
+                  <option value="{{language}}">{{language}}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              
+              <div class="filter-group">
+                <label class="filter-label">Number of Songs</label>
+                <input type="number" name="num_songs" value="20" min="1" max="100" class="filter-input">
+              </div>
+            </div>
+            
+            <button type="submit" class="generate-btn" id="generateBtn">
+              Generate Playlist
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div class="playlist-section">
+        <div class="playlist-header" style="display: none;" id="playlistHeader">
+          <div class="playlist-info">
+            <div class="playlist-cover">🎵</div>
+            <div class="playlist-details">
+              <h2 id="playlistTitle">Your Generated Playlist</h2>
+              <div class="playlist-meta" id="playlistMeta"></div>
+            </div>
+          </div>
+          <div class="playlist-actions">
+            <button class="save-btn" id="saveBtn">Save to Spotify</button>
+          </div>
+        </div>
+
+        <div class="loading" id="loading">
+          <div class="loading-spinner"></div>
+          <p>Curating your perfect playlist...</p>
+        </div>
+
+        <div class="tracklist" id="tracklist" style="display: none;">
+          <div class="tracklist-header">
+            <div>#</div>
+            <div>Title</div>
+            <div>Genre</div>
+            <div>Mood</div>
+            <div>Language</div>
+          </div>
+          <div id="trackRows"></div>
+        </div>
+
+        <div class="save-message" id="saveMessage"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentTracks = [];
+    let trackDelay = 0;
+    
+    $("#filterForm").on("submit", function(e) {
+      e.preventDefault();
+      
+      // Reset UI
+      $("#loading").css('display', 'flex');
+      $("#tracklist").hide();
+      $("#playlistHeader").hide();
+      $("#saveMessage").hide();
+      $("#generateBtn").prop('disabled', true).text('Generating...');
+      trackDelay = 0;
+      
+      $.post("/generate", $(this).serialize(), function(data) {
+        $("#loading").hide();
+        $("#generateBtn").prop('disabled', false).text('Generate Playlist');
+        
+        let html = "";
+        currentTracks = [];
+        
+        if (data.length === 0) {
+          $("#playlistMeta").text("No songs found matching your criteria");
+          $("#playlistHeader").show();
+        } else {
+          $("#playlistMeta").text(`${data.length} songs • Generated just now`);
+          $("#playlistHeader").show();
+          $("#saveBtn").show();
+          
+          data.forEach((song, index) => {
+            currentTracks.push(song.track_id);
+            html += `
+              <div class="track-row" style="animation-delay: ${trackDelay}ms" onclick="toggleEmbed(${index})">
+                <div class="track-number">${index + 1}</div>
+                <div class="track-info">
+                  <div class="track-name">${song.track_name}</div>
+                  <div class="track-artist">${song.artists}</div>
+                </div>
+                <div class="track-genre">${song.track_genre}</div>
+                <div class="track-mood">${song.mood}</div>
+                <div class="track-language">${song.language}</div>
+                <div class="spotify-embed">
+                  <iframe src="https://open.spotify.com/embed/track/${song.track_id}"
+                          frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+                </div>
+              </div>`;
+            trackDelay += 50;
+          });
+          
+          $("#trackRows").html(html);
+          $("#tracklist").show();
+        }
+      }).fail(function() {
+        $("#loading").hide();
+        $("#generateBtn").prop('disabled', false).text('Generate Playlist');
+        $("#playlistMeta").text("Error generating playlist. Please try again.");
+        $("#playlistHeader").show();
+      });
+    });
+    
+    function toggleEmbed(index) {
+      const trackRow = $(".track-row").eq(index);
+      const isExpanded = trackRow.hasClass('expanded');
+      
+      // Close all other embeds
+      $(".track-row").removeClass('expanded');
+      
+      // Toggle current embed
+      if (!isExpanded) {
+        trackRow.addClass('expanded');
+      }
+    }
+    
+    $("#saveBtn").on("click", function() {
+      const playlistName = prompt("Enter playlist name:", "My Generated Playlist");
+      if (!playlistName) return;
+      
+      $.ajax({
+        url: "/save_playlist",
+        method: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({ name: playlistName, tracks: currentTracks }),
+        success: function(res) {
+          $("#saveMessage")
+            .html(`✓ Playlist "${playlistName}" saved successfully! <a href="${res.playlist_url}" target="_blank">Open in Spotify</a>`)
+            .removeClass('error').addClass('success').show();
+        },
+        error: function() {
+          $("#saveMessage")
+            .text("✗ Error saving playlist. Please connect to Spotify first.")
+            .removeClass('success').addClass('error').show();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
