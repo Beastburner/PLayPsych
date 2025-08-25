@@ -1,32 +1,48 @@
-import os
+
 import pandas as pd
 from flask import Flask, render_template, request, jsonify, redirect, session, url_for
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
+import os
+import requests
 
-# Load .env
-load_dotenv()
+# --- Load .env (force override to avoid stale env vars) ---
+load_dotenv(override=True)
 
+
+# --- Spotify credentials ---
+CLIENT_ID = os.getenv("CLIENT_ID")
+CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+REDIRECT_URI = os.getenv("REDIRECT_URI") or "http://127.0.0.1:5000/callback"  # must match Spotify dashboard
+# --- Credential sanity check ---
+resp = requests.post(
+    "https://accounts.spotify.com/api/token",
+    data={"grant_type": "client_credentials"},
+    auth=(CLIENT_ID, CLIENT_SECRET),
+)
+print("Spotify auth test status:", resp.status_code)
+print("Spotify auth test response:", resp.json())
+if resp.status_code != 200:
+    raise ValueError("❌ Spotify credentials invalid. Check CLIENT_ID / CLIENT_SECRET in your .env")
+
+# Flask app
 app = Flask(__name__)
 app.secret_key = "supersecretkey"  # ⚠️ change in production!
 
 # Spotify OAuth setup
-CLIENT_ID = os.getenv("SPOTIPY_CLIENT_ID")
-CLIENT_SECRET = os.getenv("SPOTIPY_CLIENT_SECRET")
-REDIRECT_URI = os.getenv("SPOTIPY_REDIRECT_URI", "http://127.0.0.1:5000/callback")
-
 scope = "user-library-read playlist-modify-public playlist-modify-private user-read-email user-read-private"
-
-if not CLIENT_ID or not CLIENT_SECRET:
-    raise ValueError("❌ Spotify CLIENT_ID or CLIENT_SECRET not found in .env file")
 
 sp_oauth = SpotifyOAuth(
     client_id=CLIENT_ID,
     client_secret=CLIENT_SECRET,
     redirect_uri=REDIRECT_URI,
-    scope=scope
+    scope=scope,
+    cache_handler=None  # disable cache to avoid stale data
 )
+print("CLIENT_SECRET length:", len(CLIENT_SECRET or "None"))
+print("CLIENT_SECRET raw:", repr(CLIENT_SECRET))
+
 
 # --- Load dataset ---
 df = pd.read_csv("spotify_tracks.csv").fillna("")
@@ -88,7 +104,7 @@ def login():
 @app.route("/callback")
 def callback():
     code = request.args.get("code")
-    token_info = sp_oauth.get_access_token(code)
+    token_info = sp_oauth.get_access_token(code, as_dict=True)
     session["token_info"] = token_info
     return redirect(url_for("index"))
 
@@ -127,7 +143,6 @@ def generate_playlist():
         playlist = pd.DataFrame()
 
     return jsonify(playlist.to_dict(orient="records"))
-
 
 @app.route("/save_playlist", methods=["POST"])
 def save_playlist():
